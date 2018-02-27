@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 debug = False
-fig = plt.figure()
+
 
 
 def feature_extract(images,feature_vec=True):
@@ -29,15 +29,15 @@ def feature_extract(images,feature_vec=True):
                                           feature_vector=False)
                 if i == 0:
                     plt.ion()
-                ax1 = plt.subplot(211)
-                ax1.imshow(image)
-                ax1.set_title('Car Image', fontsize=16)
-                ax2 = plt.subplot(212)
-                ax2.imshow(vis, cmap='gray')
-                ax2.set_title('Car HOG', fontsize=16)
-                plt.pause(1)
-                ax1.cla()
-                ax2.cla()
+                    ax1 = plt.subplot(211)
+                    ax1.imshow(image)
+                    ax1.set_title('Car Image', fontsize=16)
+                    ax2 = plt.subplot(212)
+                    ax2.imshow(vis, cmap='gray')
+                    ax2.set_title('Car HOG', fontsize=16)
+                    plt.pause(1)
+                    ax1.cla()
+                    ax2.cla()
             else:
                 tmp_result[-1] = hog(norm_image[:, :, i],
                                      orientations=11,
@@ -58,4 +58,5 @@ if __name__ == "__main__":
     debug = 1
 
     _, pt, _, _ = loadAll()
+    fig = plt.figure()
     feature_extract(pt)

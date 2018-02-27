@@ -8,12 +8,17 @@ Create a [detailed writeup](./writeup.md) of the project.
 
 How to Run:
 ---
-###Training
+git clone / download the repo and cd into it on a terminal. Run:
 
+>    $ python3 main.py -i **input_video.mp4** -o **output_video.mp4**
+
+(or without arguments for default test video)
+
+###Retrain
 
 Run loadData.py first to download the [GTI vehicle image database](http://www.gti.ssr.upm.es/data/Vehicle_database.html)
 
-###Evaluation
+Run train.py
 
 
  

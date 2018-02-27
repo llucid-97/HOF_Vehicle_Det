@@ -27,14 +27,14 @@ if not debug:
     fig = plt.figure()
 
 
-def getCars(image, scaleDiv, model, yStart=350, yStop=660):
+def getCars(image, scaleDiv, model, yStart=350, yStop=660, xStart=0, xStop=1280):
     """
     :param image: Cropped RGB image frame
     :param scaleDiv: Divides image dimensions by this factor
     :return:
     """
     global debug
-    image = image[yStart:yStop]
+    image = image[yStart:yStop, xStart:xStop]
 
     # 1: Scale
     if scaleDiv != 1:
@@ -77,8 +77,8 @@ def getCars(image, scaleDiv, model, yStart=350, yStop=660):
                 ytop_draw = np.int(ytop * scaleDiv)
                 win_draw = np.int(window * scaleDiv)
                 rectangles.append(
-                    ((xbox_left, ytop_draw + yStart),
-                     (xbox_left + win_draw, ytop_draw + yStart + win_draw)))
+                    ((xbox_left + xStart, ytop_draw + yStart),
+                     (xbox_left + win_draw + xStart, ytop_draw + yStart + win_draw)))
 
     return rectangles
 
@@ -140,38 +140,63 @@ def heatBoxes(img):
 
 
 def interpreteFrame(img, model):
-    # sBoxes = getCars(img, 0.5, model,420,530)
-    mBoxes = getCars(img, 1.53, model, 400, 565)
-    lBoxes = getCars(img, 2.85, model, 450, 720)
-    print("Found ", len(mBoxes) + len(lBoxes), "boxes")
-
-    # Bring the heat
+    numBoxes = 0
     heatMap = np.zeros_like(img[:, :, 0])
-    heatMap = add_heat(heatMap, mBoxes)
-    heatMap = add_heat(heatMap, lBoxes)
+    boxes = getCars(img, 0.7, model, 400, 720, 400, 1000)
+    numBoxes += len(boxes)
+    heatMap = 0.6 * add_heat(heatMap, boxes)
+
+    boxes = getCars(img, 1.3, model, 400, 550)
+    numBoxes += len(boxes)
+    heatMap = add_heat(heatMap, boxes)
+
+    boxes = getCars(img, 1.5, model, 400, 600)
+    numBoxes += len(boxes)
+    heatMap = add_heat(heatMap, boxes)
+
+    boxes = getCars(img, 1.7, model, 400, 650)
+    numBoxes += len(boxes)
+    heatMap = add_heat(heatMap, boxes)
+
+    boxes = getCars(img, 2, model, 400, 720)
+    numBoxes += len(boxes)
+    heatMap = add_heat(heatMap, boxes)
+
+    # 2D hysteresis thresholding
+    blobs = label(heatMap)
+    for i in range(blobs[1]):
+        if not np.any(heatMap[blobs[0] == (i + 1)] > 1.5):
+            heatMap[blobs[0] == i + 1] = 0
+
+    # heatMap[heatMap <= 1] = 0
+
+    print("Found ", numBoxes, "boxes")
 
     # Temporal Smoothing: Leaky Integrator
     global lastHeatMap
 
-    updateStrength = 0.3
-    if lastHeatMap is None:
-        lastHeatMap = heatMap
-    else:
+    updateStrength = 0.2
+    if not (lastHeatMap is None):
         heatMap = ((1 - updateStrength) * lastHeatMap) + \
                   (updateStrength * heatMap)
 
     # Thresholding
-    heatMap[heatMap <= 0.2] = 0
+    lastHeatMap = heatMap
+
+    heatMap[heatMap <= 0.13] = 0
 
     boxes = heatBoxes(heatMap)
     img = draw_boxes(img, boxes, 'random')
-
+    heatMap[0, 0] = 2
     plt.ion()
     ax1 = plt.subplot(211)
     ax1.imshow(img)
     ax2 = plt.subplot(212)
-    ax2.imshow(heatMap, cmap='hot')
-    plt.pause(1)
+    ax2.imshow(lastHeatMap, cmap='hot')
+    plt.pause(0.001)
+    ax1.cla()
+    ax2.cla()
+    return img
 
 
 if __name__ == "__main__":
@@ -184,3 +209,4 @@ if __name__ == "__main__":
 
         model = loadModel()
         interpreteFrame(img, model)
+        input()

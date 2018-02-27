@@ -23,6 +23,7 @@ The goals / steps of this project are to track vehicles in the test video by:
 [heatmap4]: ./output_images/Frame4.png
 [heatmap5]: ./output_images/Frame5.png
 [heatmap6]: ./output_images/Frame6.png
+[image9]: ./output_images/pipeline.gif
 [video1]: ./project_video.mp4
 
 ## [Rubric](https://review.udacity.com/#!/rubrics/513/view) Points
@@ -120,14 +121,28 @@ This works out to show:
 ### Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+
+
+![alt text][image9]
+
+Here's a [link to my video result](./output_videos/out.mp4)
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
-I recorded the positions of positive detections in each frame of the video.  From the positive detections I created a heatmap and then thresholded that map to identify vehicle positions.  I then used `scipy.ndimage.measurements.label()` to identify individual blobs in the heatmap.  I then assumed each blob corresponded to a vehicle.  I constructed bounding boxes to cover the area of each blob detected.  
+This is done mainly in the function `interpreteFrame()` in `getCars.py`
+ 
+I recorded the positions of positive detections in each frame of the video.
 
-Here's an example result showing the heatmap from a series of frames of video, the result of `scipy.ndimage.measurements.label()` and the bounding boxes then overlaid on the last frame of video:
+From the positive detections I created a heatmap.
+
+Here's an example result showing the heatmap from a series of frames of video.
+ 
+I then use `scipy.ndimage.measurements.label()` to separately label(number) clustered detections
+
+I use the result from that to select each label and hysteresis threshold them
+
+Then I temporally filter the result with a leaky integrator
 
 ### Here are six frames and their corresponding heatmaps:
 
@@ -152,5 +167,32 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
 
-Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.  
+Here I'll talk about the approach I took, what techniques I used, what worked and why, where the pipeline might fail and how I might improve it if I were going to pursue this project further.
+
+The classifier's accuracy was really good. Aside from expanding the dataset, not much could improve there.
+
+My biggest mistake was committing to using only its "true"/"false" predictions as given.
+
+I should have taken a confidence score instead (eg: Distance from the SVC decision boundary).
+
+With this, it would have been easier to filter out low-confidence false positives.
+
+It would also have boosted accuracy since I could then perform non-max suppresison on windows' confidence scores, meaning:
+
+I would need far fewer sliding window scales: 2 would have sufficed, instead of the 6 my final version used because:
+
+I could get an imprecise but accurate prediction, when doing a "broad search" (large scale/stride windows), then narrow it down to a small area around this "true" prediction.
+
+This would also eliminate any false positives because they would be verified then and there.
+
+___
+
+
+Lastly, I'd separate my temporal filtering into 2 parts:
+* Smoothing box dimensions
+* Reinforcing probability of box presence being a true positive
+
+The current implementation ties these two together, and finding parameters to ge tthem both working well was taking too long.
+
+  
 
